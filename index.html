@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda de Contatos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Agenda de Contatos</h1>
+        
+        <!-- Campo de filtro -->
+        <div class="filtro-container">
+            <label for="filtro">Filtrar contatos:</label>
+            <input type="text" id="filtro" placeholder="Digite o nome para buscar...">
+        </div>
+
+        <!-- Caixas de texto para cadastro -->
+        <div class="cadastro-container">
+            <h2>Cadastrar Novo Contato</h2>
+            <div class="inputs-row">
+                <div class="input-group">
+                    <label for="nome">Nome:</label>
+                    <input type="text" id="nome" placeholder="Digite o nome completo">
+                </div>
+                <div class="input-group">
+                    <label for="email">E-mail:</label>
+                    <input type="email" id="email" placeholder="Digite o e-mail">
+                </div>
+                <div class="input-group">
+                    <label for="telefone">Telefone:</label>
+                    <input type="text" id="telefone" placeholder="(11) 99999-9999">
+                </div>
+                <div class="input-group">
+                    <label>&nbsp;</label>
+                    <button type="button" id="btn-salvar" class="btn-salvar">Cadastrar</button>
+                    <button type="button" id="btn-cancelar" class="btn-cancelar" style="display: none;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total de contatos -->
+        <div class="total-container">
+            <strong>Total de contatos cadastrados: <span id="total-contatos">1</span></strong>
+        </div>
+
+        <!-- Tabela de contatos -->
+        <div class="tabela-container">
+            <table id="tabela-contatos">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Telefone</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-tabela">
+                    <!-- Contato de exemplo já aparece aqui -->
+                    <tr>
+                        <td>João Silva</td>
+                        <td>joao.silva@email.com</td>
+                        <td>(11) 99999-9999</td>
+                        <td>
+                            <button class="btn-editar" onclick="editarContato(1)">Editar</button>
+                            <button class="btn-excluir" onclick="excluirContato(1)">Excluir</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Array para armazenar os contatos
+        let contatos = [];
+        let idEditando = null;
+
+        // Elementos do DOM
+        const inputNome = document.getElementById('nome');
+        const inputEmail = document.getElementById('email');
+        const inputTelefone = document.getElementById('telefone');
+        const inputFiltro = document.getElementById('filtro');
+        const corpoTabela = document.getElementById('corpo-tabela');
+        const totalSpan = document.getElementById('total-contatos');
+        const btnSalvar = document.getElementById('btn-salvar');
+        const btnCancelar = document.getElementById('btn-cancelar');
+
+        // Carregar contatos ao iniciar
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarContatos();
+            atualizarTabela();
+        });
+
+        // Event listeners
+        btnSalvar.addEventListener('click', function() {
+            if (idEditando) {
+                atualizarContato();
+            } else {
+                adicionarContato();
+            }
+        });
+
+        btnCancelar.addEventListener('click', function() {
+            cancelarEdicao();
+        });
+
+        inputFiltro.addEventListener('keyup', function() {
+            atualizarTabela();
+        });
+
+        // Funções principais
+        function carregarContatos() {
+            const contatosSalvos = localStorage.getItem('contatos');
+            if (contatosSalvos) {
+                contatos = JSON.parse(contatosSalvos);
+            } else {
+                // Contato de exemplo
+                contatos = [
+                    { 
+                        id: 1, 
+                        nome: 'João Silva', 
+                        email: 'joao.silva@email.com', 
+                        telefone: '(11) 99999-9999' 
+                    }
+                ];
+                salvarContatos();
+            }
+        }
+
+        function salvarContatos() {
+            localStorage.setItem('contatos', JSON.stringify(contatos));
+        }
+
+        function adicionarContato() {
+            // Validar campos
+            if (!inputNome.value || !inputEmail.value || !inputTelefone.value) {
+                alert('Por favor, preencha todos os campos!');
+                return;
+            }
+            
+            // Criar novo contato
+            const novoContato = {
+                id: Date.now(),
+                nome: inputNome.value,
+                email: inputEmail.value,
+                telefone: inputTelefone.value
+            };
+            
+            // Adicionar ao array
+            contatos.push(novoContato);
+            
+            // Salvar no localStorage
+            salvarContatos();
+            
+            // Limpar formulário
+            limparFormulario();
+            
+            // Atualizar tabela
+            atualizarTabela();
+        }
+
+        function editarContato(id) {
+            const contato = contatos.find(c => c.id === id);
+            
+            if (contato) {
+                // Preencher formulário
+                inputNome.value = contato.nome;
+                inputEmail.value = contato.email;
+                inputTelefone.value = contato.telefone;
+                
+                // Guardar ID do contato sendo editado
+                idEditando = id;
+                
+                // Alterar botões
+                btnSalvar.textContent = 'Atualizar';
+                btnCancelar.style.display = 'inline-block';
+            }
+        }
+
+        function atualizarContato() {
+            const index = contatos.findIndex(c => c.id === idEditando);
+            
+            if (index !== -1) {
+                // Validar campos
+                if (!inputNome.value || !inputEmail.value || !inputTelefone.value) {
+                    alert('Por favor, preencha todos os campos!');
+                    return;
+                }
+                
+                // Atualizar dados
+                contatos[index] = {
+                    id: idEditando,
+                    nome: inputNome.value,
+                    email: inputEmail.value,
+                    telefone: inputTelefone.value
+                };
+                
+                // Salvar no localStorage
+                salvarContatos();
+                
+                // Cancelar modo edição
+                cancelarEdicao();
+                
+                // Atualizar tabela
+                atualizarTabela();
+            }
+        }
+
+        function excluirContato(id) {
+            if (confirm('Tem certeza que deseja excluir este contato?')) {
+                // Remover contato
+                contatos = contatos.filter(c => c.id !== id);
+                
+                // Salvar no localStorage
+                salvarContatos();
+                
+                // Se estava editando este contato, cancelar
+                if (idEditando === id) {
+                    cancelarEdicao();
+                }
+                
+                // Atualizar tabela
+                atualizarTabela();
+            }
+        }
+
+        function cancelarEdicao() {
+            idEditando = null;
+            limparFormulario();
+            btnSalvar.textContent = 'Cadastrar';
+            btnCancelar.style.display = 'none';
+        }
+
+        function limparFormulario() {
+            inputNome.value = '';
+            inputEmail.value = '';
+            inputTelefone.value = '';
+        }
+
+        function filtrarContatos() {
+            const termo = inputFiltro.value.toLowerCase().trim();
+            
+            if (!termo) {
+                return contatos;
+            }
+            
+            return contatos.filter(c => 
+                c.nome.toLowerCase().includes(termo)
+            );
+        }
+
+        function atualizarTabela() {
+            const contatosFiltrados = filtrarContatos();
+            
+            // Atualizar total
+            totalSpan.textContent = contatos.length;
+            
+            // Limpar tabela
+            corpoTabela.innerHTML = '';
+            
+            // Verificar se existem contatos
+            if (contatosFiltrados.length === 0) {
+                const linha = document.createElement('tr');
+                linha.innerHTML = '<td colspan="4" class="lista-vazia">Nenhum contato cadastrado</td>';
+                corpoTabela.appendChild(linha);
+            } else {
+                // Adicionar contatos à tabela
+                contatosFiltrados.forEach(contato => {
+                    const linha = document.createElement('tr');
+                    linha.innerHTML = `
+                        <td>${contato.nome}</td>
+                        <td>${contato.email}</td>
+                        <td>${contato.telefone}</td>
+                        <td>
+                            <button class="btn-editar" onclick="editarContato(${contato.id})">Editar</button>
+                            <button class="btn-excluir" onclick="excluirContato(${contato.id})">Excluir</button>
+                        </td>
+                    `;
+                    corpoTabela.appendChild(linha);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
